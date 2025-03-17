@@ -2,9 +2,10 @@ import torch
 import torch.nn as nn
 import math
 
-# d_model = dimension of model (Embedding dimension -> Each word is represented say as a 4 dimensional vector) - 512 in our demo
+# d_model (embed_dim ) = dimension of model (Embedding dimension -> Each word is represented say as a 4 dimensional vector) - 512 in our demo
 # vocab_size = number of words in our dictionary 
 # embeddings_example.py
+# seq_len = length of sequence "I am a good boy" -> 5 | (if done word level tokenisation) 
 
 class InputEmbeddings(nn.Module):
     def __init__(self, d_model : int, vocab_size : int):
@@ -37,7 +38,7 @@ class PositionalEncoding(nn.Module):
         self.register_buffer('pe', pe)
 
     def forward(self, x):
-        x = x + (self.pe[:, :x.shape[1], :]).requires_grad(False)  #To make the model not to learn the positions as they are a one time thing
+        x = x + (self.pe[:, :x.shape[1], :]).requires_grad_(False)  #To make the model not to learn the positions as they are a one time thing
         return self.dropout(x)
     
 class LayerNormalization(nn.Module):
@@ -96,9 +97,9 @@ class MultiHeadAttentionBlock(nn.Module):
 
     # mask is used when you want some words to not to interact with other words so we mask them
     def forward(self, q, k, v, mask):
-        query = self.w_q(q)
-        key = self.w_k(k)
-        value = self.w_v(v)
+        query = self.w_q(q) # (batch, seq_len, d_model) --> (batch, seq_len, d_model)
+        key = self.w_k(k) # (batch, seq_len, d_model) --> (batch, seq_len, d_model)
+        value = self.w_v(v) # (batch, seq_len, d_model) --> (batch, seq_len, d_model)
         # divide Q, K, V into smaller matrices to provide them to smaller heads 
 
         # ----Getting the smaller Matrices---- 
@@ -189,6 +190,7 @@ class ProjectionLayer(nn.Module):
     
 class Transformer(nn.Module):
     def __init__(self, encoder : Encoder, decoder: Decoder, src_embed: InputEmbeddings, tgt_embed: InputEmbeddings, src_pos: PositionalEncoding, tgt_pos : PositionalEncoding, projection_layer: ProjectionLayer) -> None:
+        super().__init__()
         self.encoder = encoder
         self.decoder = decoder
         self.src_embed = src_embed
